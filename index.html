@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anoq By Kamm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #667eea;
+            margin-bottom: 15px;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .profile-bio {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .message-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-send {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+        }
+
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .message.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .share-link {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .share-link input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .btn-copy {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-copy:hover {
+            background: #5a6fd8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Profile Card -->
+        <div class="profile-card" id="profileCard">
+            <img src="" alt="Profile" class="profile-image" id="profileImage">
+            <h1 class="profile-name" id="profileName">Loading...</h1>
+            <p class="profile-bio" id="profileBio"></p>
+        </div>
+
+        <!-- Message Card -->
+        <div class="message-card">
+            <h2>Kirim Pesan Rahasia</h2>
+            <form id="messageForm">
+                <div class="form-group">
+                    <textarea 
+                        id="message" 
+                        placeholder="Tulis pesanmu disini..." 
+                        rows="4"
+                        required
+                    ></textarea>
+                </div>
+                <button type="submit" class="btn-send">
+                    Kirim Pesan ✨
+                </button>
+            </form>
+            <div id="messageStatus" class="message"></div>
+            
+            <!-- Share Link Section -->
+            <div class="share-link">
+                <input type="text" id="shareUrl" readonly value="Loading...">
+                <button class="btn-copy" onclick="copyShareLink()">Salin</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ganti dengan URL backend kamu setelah deploy
+        const API_URL = 'https://anonq-backend-production.up.railway.app';
+        const username = window.location.pathname.split('/').pop() || 'default';
+
+        // Load profile
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/api/profile/${username}`);
+                const profile = await response.json();
+                
+                document.getElementById('profileName').textContent = profile.name;
+                document.getElementById('profileBio').textContent = profile.bio || 'Terima pesan secara anonymous';
+                document.getElementById('profileImage').src = profile.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name) + '&background=667eea&color=fff';
+                
+                // Set share link
+                const shareUrl = `${window.location.origin}/${username}`;
+                document.getElementById('shareUrl').value = shareUrl;
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // Kirim pesan
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const message = document.getElementById('message').value.trim();
+            const statusDiv = document.getElementById('messageStatus');
+            
+            if (!message) {
+                showStatus('Pesan tidak boleh kosong!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${username}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: message })
+                });
+                
+                if (response.ok) {
+                    showStatus('Pesan berhasil dikirim!', 'success');
+                    document.getElementById('message').value = '';
+                } else {
+                    showStatus('Gagal mengirim pesan. Coba lagi.', 'error');
+                }
+            } catch (error) {
+                showStatus('Terjadi kesalahan. Coba lagi.', 'error');
+            }
+        });
+
+        function showStatus(text, type) {
+            const statusDiv = document.getElementById('messageStatus');
+            statusDiv.textContent = text;
+            statusDiv.className = `message ${type}`;
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function copyShareLink() {
+            const shareUrl = document.getElementById('shareUrl');
+            shareUrl.select();
+            document.execCommand('copy');
+            alert('Link berhasil disalin!');
+        }
+
+        // Load profile saat halaman dibuka
+        loadProfile();
+    </script>
+</body>
+  </html>
